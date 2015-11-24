@@ -1,0 +1,361 @@
+
+
+一、ViewController
+
+View Controller用于管理应用的资源，包括管理与之关联的View，与其他ViewController通信和协调。为了保证程序的高效运行，View Controller总是在需要的时候才加载View（通常被称为lazyload），并在不需要或者内存告警的时候卸载视图。
+
+ 
+
+二、ViewController的生命周期
+
+用一个自定义的ViewController做测试类名TestViewController，重写如下方法并加上日志信息：
+
+- (id)initWithNibName:(NSString*)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
+
+{
+
+    self = [super initWithNibName:nibNameOrNilbundle:nibBundleOrNil];
+
+    if (self) {
+
+        // Custom initialization
+
+        NSLog(@"initWithNibName");
+
+    }
+
+    return self;
+
+}
+
+-(void)dealloc{
+
+    [super dealloc];
+
+    NSLog(@"dealloc");
+
+}
+
+-(void)viewDidAppear:(BOOL)animated{
+
+   
+
+    [super viewDidAppear: animated];
+
+    NSLog(@"viewDidAppear");
+
+}
+
+ 
+
+-(void)viewDidDisappear:(BOOL)animated{
+
+    [super viewDidDisappear: animated];
+
+    NSLog(@"viewDidDisappear");
+
+}
+
+ 
+
+-(void)viewDidLayoutSubviews{
+
+    [super viewDidLayoutSubviews];
+
+    NSLog(@"viewDidLayoutSubviews");
+
+}
+
+ 
+
+-(void)viewDidLoad{
+
+    [super viewDidLoad];
+
+    NSLog(@"viewDidLoad");
+
+}
+
+ 
+
+-(void)viewDidUnload{
+
+    [super viewDidUnload];
+
+    NSLog(@"viewDidUnload");
+
+}
+
+ 
+
+-(void)viewWillAppear:(BOOL)animated{
+
+    [super viewWillAppear: animated];
+
+    NSLog(@"viewWillAppear");
+
+}
+
+ 
+
+-(void)viewWillDisappear:(BOOL)animated{
+
+    [super viewWillDisappear: animated];
+
+    NSLog(@"viewWillDisappear");
+
+}
+
+-(void)viewWillLayoutSubviews{
+
+    [super viewWillLayoutSubviews];
+
+    NSLog(@"viewWillLayoutSubviews");
+
+}
+
+ 
+
+-(void)viewWillUnload{
+
+    [super viewWillUnload];
+
+    NSLog(@"viewWillUnload");
+
+}
+
+ 
+
+-(void)loadView{
+
+    [super loadView];
+
+   NSLog(@"loadView");
+
+}
+
+- (void)didReceiveMemoryWarning
+
+{
+
+    [super didReceiveMemoryWarning];
+
+    // Dispose of any resources that can berecreated.
+
+    NSLog(@"didReceiveMemoryWarning");
+
+}
+
+ 
+
+在另外一个ViewController中调用代码如下：
+
+- (IBAction)buttonPressed:(id)sender {
+
+   
+
+    TestViewController *viewController =[[TestViewController alloc] initWithNibName: @"TestViewController" bundle: nil];
+
+   
+
+    [self.navigationController pushViewController:viewController animated: YES];
+
+    [viewController release];
+
+}
+
+ 
+
+点击button，然后按导航栏的[返回]，打印的日志如下，显示了各方法其调用顺序：
+
+2013-03-27 16:58:48.277StudyInit[1659:11303] initWithNibName
+
+2013-03-27 16:58:48.279StudyInit[1659:11303] loadView
+
+2013-03-27 16:58:48.280StudyInit[1659:11303] viewDidLoad
+
+2013-03-27 16:58:48.281StudyInit[1659:11303] viewWillAppear
+
+2013-03-27 16:58:48.284StudyInit[1659:11303] viewWillLayoutSubviews
+
+2013-03-27 16:58:48.285StudyInit[1659:11303] viewDidLayoutSubviews
+
+2013-03-27 16:58:48.637StudyInit[1659:11303] viewDidAppear
+
+2013-03-27 16:58:50.158StudyInit[1659:11303] viewWillDisappear
+
+2013-03-27 16:58:50.511StudyInit[1659:11303] viewDidDisappear
+
+2013-03-27 16:58:50.512StudyInit[1659:11303] dealloc
+
+ 
+
+在 iOS 模拟器的菜单里选 硬件->模拟内存警告，打印的日志信息如下：
+
+2013-03-28 10:03:21.225StudyInit[556:11303] Received memory warning.
+
+2013-03-28 10:03:21.226StudyInit[556:11303] didReceiveMemoryWarning
+
+ 
+
+ 
+
+三、详细解释一下：
+
+1、initWithNibName:
+
+初始化ViewController本身。
+
+init中应该只有相关数据的初始化，而且这些数据都是比较关键的数据，不要出现创建view的代码，也不要调self.view，否则会导致ViewController创建view。
+
+如果是外部通过调用initWithNibName:bundle指定nib文件名的话，ViewController记载此nib来创建View。
+
+如果initWithNibName:bundle的name参数为nil，则ViewController会通过以下两个步骤找到与其关联的nib。
+
+1）如果ViewController的类名以“Controller”结尾，例如ViewController的类名是MyViewController，则查找是否存在MyView.nib；
+
+2）找跟ViewController类名一样的文件，例如MyViewController，则查找是否存在MyViewController.nib。
+
+ 
+
+2、loadView:
+
+只初始化view，一般用于创建比较关键的view如tableView Controller的tabView，UINavigationController的navgationBar，不可调用view的getter（在掉super loadView前），最好也不要初始化一些非关键的view。
+
+需要用到view，比如调用了view的getter方法时，在getter里会先判断view是否创建，如果没有创建，那么会调用loadView来创建view，并赋值给ViewController的view属性，在loadView之前view是nil。
+
+如果子类没有重写的loadView，则ViewController会从StroyBoards中找或者调用其默认的loadView，默认的loadView返回一个空白的UIView对象。
+
+View Controller是判断子类是否重写了loadView，而不是判断调用子类的loadView之后ViewController的View是否为空。就是说，如果子类重写了loadView的话，不管子类在loadView里面能否获取到View，ViewController都会直接调viewDidLoad完成View的加载。
+
+如果手工维护views，必须重载该方法。
+
+如果使用IB维护views，不能重载该方法。
+
+If you use Interface Builder to create your views and initialize the view controller, you must not override this method.
+
+ 
+
+3、viewDidLoad:
+
+view已经加载到内存中了。适合创建一些附加的view和控件。
+
+ 
+
+4、viewWillAppear:
+
+view即将显示，但此时其superView还为nil，即view还没有加到任何其他view中，但准备要添加到其他View中了。
+
+在view被添加到superview之前，切换动画之前调用。在这里可以进行一些显示前的处理。比如键盘弹出，一些特殊的过程动画（比如状态条和navigationbar颜色）。
+
+ 
+
+5、viewWillLayoutSubviews:
+
+view即将布局其Subviews。比如view的bounds改变了，要调整Subviews的位置，在调整之前要做的一些工作就可以在该方法中实现。
+
+ 
+
+6、viewDidLayoutSubviews:
+
+view已经布局其Subviews。比如view的bounds改变了，已经调整Subviews的位置，在调整完成之后要做的一些工作就可以在该方法中实现。
+
+ 
+
+7、viewDidAppear:
+
+view已经显示，即已经加到其superView中了。view显示后，在切换动画后，如果有需要的操作，可以在这里加入相关代码
+
+ 
+
+8、viewWillDisappear:
+
+view即将从superView中移除，此时还没有调用removeFromeSuperView。
+
+ 
+
+9、viewDidDisappear:
+
+view已经从superView中移除了。
+
+ 
+
+10、dealloc:
+
+view Controller被释放。
+
+ 
+
+需要注意如下几个方法
+
+viewDidUnload（iOS6废弃了该方法）
+
+viewWillUnload（iOS6废弃了该方法）
+
+didReceiveMemoryWarning
+
+内存吃紧时（系统发出警告或者ViewController本身调用导致didReceiveMemoryWarning被调用）。
+
+注意是除当前正在展示的view 所属 viewController 以外所有已经在内存里面的viewController 执行 didReceiveMemoryWarning方法，而不是当前viewController 执行 didReceiveMemoryWarning。
+
+ 
+
+一个didReceiveMemoryWarning的实现方案：
+
+- (void)didReceiveMemoryWarning
+
+{
+
+    [super didReceiveMemoryWarning];
+
+    // Addcode to clean up any of your own resources that are no longer necessary.
+
+    if ([self.view window] == nil)
+
+    {
+
+        // Add code to preserve data stored in the views that might be
+
+        // needed later.
+
+       
+
+        // Add code to clean up other strong references to the view in
+
+        // the view hierarchy.
+
+        self.view = nil;
+
+    }
+
+}
+
+ 
+
+一个可能的loadView实现方案
+
+-(void)loadView
+
+{
+
+    CGRect applicationFrame =[[UIScreenmainScreen] applicationFrame];
+
+    UIView *contentView = [[UIViewalloc]initWithFrame:applicationFrame];
+
+    contentView.backgroundColor =[UIColordarkGrayColor];
+
+    self.view = contentView;
+
+   
+
+    UILabel *lab =[[UILabelalloc]initWithFrame:CGRectMake(100, 100, 100, 100)];
+
+    lab.text = @"HelloWorld";
+
+    [self.viewaddSubview:lab];
+
+}
+
+loadView虽然返回值为空，但必须在函数体内对self.view进行赋值，否则会在建立该界面的时候收到如下的log信息：
+
+Application windows areexpected to have a root view controller at the end of application launch
